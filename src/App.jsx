@@ -1,7 +1,9 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import ContractList from './ContractList.jsx';
-import ContractForm from './ContractForm.jsx'; // 引入表單元件
+import ContractForm from './ContractForm.jsx';
+// 引入新建的結算頁面元件
+import SettlementPage from './SettlementPage.jsx';
 import './App.css';
 
 function App() {
@@ -20,6 +22,10 @@ function App() {
           
           {/* /:id/edit 路徑，顯示編輯合約的表單 */}
           <Route path="/:id/edit" element={<ContractForm />} />
+
+          {/* --- 新增的路由規則 --- */}
+          {/* /:id/settlement 路徑，顯示結算頁面 */}
+          <Route path="/:id/settlement" element={<SettlementPage />} />
         </Routes>
       </main>
     </div>

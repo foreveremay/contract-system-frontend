@@ -84,3 +84,49 @@ export const getCategories = async () => {
     throw error;
   }
 };
+// --- 請將此函式加入到 src/api.js 的最下方 ---
+
+/**
+ * 獲取結算頁面所需的所有資料
+ * 後端應提供一個 API 端點，一次性回傳主合約、所有關聯的 B 合約及所有相關成本
+ * @param {string} contractId - 主合約 A 的 ID
+ * @returns {Promise<object>}
+ */
+export const getSettlementData = async (contractId) => {
+  try {
+    // 為了簡化前端操作，我們假設後端已提供一個優化過的 API
+    // 實際上，後端可能需要組合多個查詢才能回傳這個結果
+    const response = await fetch(`${API_BASE_URL}/api/contracts/${contractId}/settlement-data/`);
+    if (!response.ok) {
+      throw new Error('無法獲取結算資料，請確認後端 API 是否已準備就緒。');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`獲取合約 ${contractId} 的結算資料失敗:`, error);
+    throw error;
+  }
+};
+/**
+ * 執行結算，將最終的獎金分配等資料送到後端
+ * @param {string} contractId - 主合約 A 的 ID
+ * @param {object} settlementData - 包含獎金分配資訊的物件
+ * @returns {Promise<object>}
+ */
+export const performSettlement = async (contractId, settlementData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/contracts/${contractId}/settlement/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settlementData),
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        // 讓錯誤訊息更詳細
+        throw new Error(errorData.detail || '執行結算失敗');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`執行合約 ${contractId} 的結算失敗:`, error);
+    throw error;
+  }
+};
