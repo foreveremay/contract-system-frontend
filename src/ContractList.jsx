@@ -1,31 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getContracts, getContractAnalysis } from './api.js';
+// 引入 updateContract API
+import { getContracts, getContractAnalysis, updateContract } from './api.js';
 import AnalysisModal from './AnalysisModal.jsx';
 
 const ContractList = () => {
-  const [contracts, setContracts] = useState([]); // 預設為一個空陣列
+  const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [analysisData, setAnalysisData] = useState(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
 
+  const fetchContracts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getContracts();
+      setContracts(data || []); 
+    } catch (err) {
+      setError("無法載入合約資料，請確認後端伺服器是否已啟動。");
+      setContracts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchContracts = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await getContracts();
-        // 【修正】確保即使 data 是 null 或 undefined，contracts 也會是一個陣列
-        setContracts(data || []); 
-      } catch (err) {
-        setError("無法載入合約資料，請確認後端伺服器是否已啟動。");
-        setContracts([]); // 發生錯誤時也確保是空陣列
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchContracts();
   }, []);
 
@@ -52,6 +53,23 @@ const ContractList = () => {
     setAnalysisData(null);
   };
 
+  // --- 新增的函式：處理狀態更新 ---
+  const handleUpdateStatus = async (contract, newStatus) => {
+    if (!window.confirm(`確定要將合約 "${contract.name}" 的狀態變更為 "${newStatus === 'COMPLETED' ? '已結案' : newStatus}" 嗎？`)) {
+        return;
+    }
+    try {
+        // 我們需要傳送完整的合約資料，只更新 status 欄位
+        const updatedData = { ...contract, status: newStatus };
+        await updateContract(contract.id, updatedData);
+        // 更新成功後，重新載入列表
+        fetchContracts(); 
+    } catch (err) {
+        alert('狀態更新失敗！');
+    }
+  };
+
+
   if (loading) return <div>正在載入中...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
 
@@ -75,7 +93,6 @@ const ContractList = () => {
           </tr>
         </thead>
         <tbody>
-          {/* 【修正】增加一個檢查，確保 contracts 是一個陣列才執行 map */}
           {Array.isArray(contracts) && contracts.length > 0 ? (
             contracts.map(contract => (
               <tr key={contract.id}>
@@ -91,6 +108,17 @@ const ContractList = () => {
                   <Link to={`/${contract.id}/edit`}>
                     <button style={{ marginLeft: '5px' }}>編輯</button>
                   </Link>
+
+                  {/* --- 新增的按鈕 --- */}
+                  {/* 只有 A 合約且狀態為「進行中」時，才顯示此按鈕 */}
+                  {contract.type === 'A' && contract.status === 'IN_PROGRESS' && (
+                    <button 
+                      style={{ marginLeft: '5px' }}
+                      onClick={() => handleUpdateStatus(contract, 'COMPLETED')}
+                    >
+                      標為已結案
+                    </button>
+                  )}
                 </td>
               </tr>
             ))
