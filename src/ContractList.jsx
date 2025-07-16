@@ -53,16 +53,20 @@ const ContractList = () => {
     setAnalysisData(null);
   };
 
-  // --- 新增的函式：處理狀態更新 ---
+  // 合併了兩個分支的狀態更新邏輯
   const handleUpdateStatus = async (contract, newStatus) => {
-    if (!window.confirm(`確定要將合約 "${contract.name}" 的狀態變更為 "${newStatus === 'COMPLETED' ? '已結案' : newStatus}" 嗎？`)) {
+    const statusText = {
+        COMPLETED: '已結案',
+    };
+
+    if (!window.confirm(`確定要將合約 "${contract.name}" 的狀態變更為 "${statusText[newStatus] || newStatus}" 嗎？`)) {
         return;
     }
     try {
-        // 我們需要傳送完整的合約資料，只更新 status 欄位
+        // 為了更新狀態，我們需要傳送完整的合約物件，只修改 status 欄位
         const updatedData = { ...contract, status: newStatus };
         await updateContract(contract.id, updatedData);
-        // 更新成功後，重新載入列表
+        // 更新成功後，重新載入列表以顯示最新狀態
         fetchContracts(); 
     } catch (err) {
         alert('狀態更新失敗！');
@@ -109,8 +113,8 @@ const ContractList = () => {
                     <button style={{ marginLeft: '5px' }}>編輯</button>
                   </Link>
 
-                  {/* --- 新增的按鈕 --- */}
-                  {/* 只有 A 合約且狀態為「進行中」時，才顯示此按鈕 */}
+                  {/* --- 合併後的按鈕邏輯 --- */}
+                  {/* 進行中 -> 可標為已結案 */}
                   {contract.type === 'A' && contract.status === 'IN_PROGRESS' && (
                     <button 
                       style={{ marginLeft: '5px' }}
@@ -118,6 +122,15 @@ const ContractList = () => {
                     >
                       標為已結案
                     </button>
+                  )}
+                  
+                  {/* 已結案 -> 可進行結算 */}
+                  {contract.status === 'COMPLETED' && (
+                    <Link to={`/${contract.id}/settlement`}>
+                        <button style={{ marginLeft: '5px', backgroundColor: '#28a745', color: 'white' }}>
+                            結算
+                        </button>
+                    </Link>
                   )}
                 </td>
               </tr>
