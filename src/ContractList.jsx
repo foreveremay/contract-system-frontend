@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+// 引入 updateContract API
 import { getContracts, getContractAnalysis, updateContract } from './api.js';
 import AnalysisModal from './AnalysisModal.jsx';
 
@@ -52,23 +53,26 @@ const ContractList = () => {
     setAnalysisData(null);
   };
 
+  // 合併了兩個分支的狀態更新邏輯
   const handleUpdateStatus = async (contract, newStatus) => {
     const statusText = {
         COMPLETED: '已結案',
-        // 可以補充其他狀態
     };
 
     if (!window.confirm(`確定要將合約 "${contract.name}" 的狀態變更為 "${statusText[newStatus] || newStatus}" 嗎？`)) {
         return;
     }
     try {
+        // 為了更新狀態，我們需要傳送完整的合約物件，只修改 status 欄位
         const updatedData = { ...contract, status: newStatus };
         await updateContract(contract.id, updatedData);
+        // 更新成功後，重新載入列表以顯示最新狀態
         fetchContracts(); 
     } catch (err) {
         alert('狀態更新失敗！');
     }
   };
+
 
   if (loading) return <div>正在載入中...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
@@ -109,7 +113,7 @@ const ContractList = () => {
                     <button style={{ marginLeft: '5px' }}>編輯</button>
                   </Link>
 
-                  {/* --- 按鈕邏輯更新 --- */}
+                  {/* --- 合併後的按鈕邏輯 --- */}
                   {/* 進行中 -> 可標為已結案 */}
                   {contract.type === 'A' && contract.status === 'IN_PROGRESS' && (
                     <button 

@@ -84,18 +84,55 @@ export const getCategories = async () => {
     throw error;
   }
 };
-// --- 請將此函式加入到 src/api.js 的最下方 ---
 
-/**
- * 獲取結算頁面所需的所有資料
- * 後端應提供一個 API 端點，一次性回傳主合約、所有關聯的 B 合約及所有相關成本
- * @param {string} contractId - 主合約 A 的 ID
- * @returns {Promise<object>}
- */
+// --- 以下是合併了兩個分支的新函式 ---
+
+// from stage-1
+export const getContractItems = async (contractId, itemType) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/contracts/${contractId}/${itemType}/`);
+    if (!response.ok) throw new Error(`無法獲取 ${itemType} 列表`);
+    return await response.json();
+  } catch (error) {
+    console.error(`獲取 ${itemType} 失敗:`, error);
+    throw error;
+  }
+};
+
+// from stage-1
+export const createContractItem = async (contractId, itemType, data) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/contracts/${contractId}/${itemType}/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error(`建立 ${itemType} 失敗`);
+    return await response.json();
+  } catch (error) {
+    console.error(`建立 ${itemType} 失敗:`, error);
+    throw error;
+  }
+};
+
+// from stage-1
+export const deleteContractItem = async (itemType, itemId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/${itemType}/${itemId}/`, {
+      method: 'DELETE',
+    });
+    if (response.status !== 204 && !response.ok) {
+        throw new Error(`刪除 ${itemType} 失敗`);
+    }
+  } catch (error) {
+    console.error(`刪除 ID 為 ${itemId} 的項目失敗:`, error);
+    throw error;
+  }
+};
+
+// from stage-2
 export const getSettlementData = async (contractId) => {
   try {
-    // 為了簡化前端操作，我們假設後端已提供一個優化過的 API
-    // 實際上，後端可能需要組合多個查詢才能回傳這個結果
     const response = await fetch(`${API_BASE_URL}/api/contracts/${contractId}/settlement-data/`);
     if (!response.ok) {
       throw new Error('無法獲取結算資料，請確認後端 API 是否已準備就緒。');
@@ -106,12 +143,8 @@ export const getSettlementData = async (contractId) => {
     throw error;
   }
 };
-/**
- * 執行結算，將最終的獎金分配等資料送到後端
- * @param {string} contractId - 主合約 A 的 ID
- * @param {object} settlementData - 包含獎金分配資訊的物件
- * @returns {Promise<object>}
- */
+
+// from stage-2
 export const performSettlement = async (contractId, settlementData) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/contracts/${contractId}/settlement/`, {
@@ -121,7 +154,6 @@ export const performSettlement = async (contractId, settlementData) => {
     });
     if (!response.ok) {
         const errorData = await response.json();
-        // 讓錯誤訊息更詳細
         throw new Error(errorData.detail || '執行結算失敗');
     }
     return await response.json();

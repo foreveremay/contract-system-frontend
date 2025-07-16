@@ -2,6 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getContractById, createContract, updateContract, getClients, getCategories } from './api';
 
+// 引入新建立的元件
+import CostList from './CostList.jsx';
+import PaymentList from './PaymentList.jsx';
+import InvoiceList from './InvoiceList.jsx';
+
 const ContractForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -85,7 +90,7 @@ const ContractForm = () => {
   if (loading && isEditing) return <div>正在載入表單...</div>;
 
   return (
-    <div style={{ maxWidth: '600px', margin: 'auto' }}>
+    <div style={{ maxWidth: '800px', margin: 'auto', textAlign: 'left' }}>
       <h1>{isEditing ? '編輯合約' : '新增合約'}</h1>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         
@@ -154,6 +159,19 @@ const ContractForm = () => {
         </div>
         {error && <p style={{ color: 'red' }}>{error}</p>}
       </form>
+
+      {/* --- 新增的區塊 --- */}
+      {/* 只有在編輯模式時，才顯示附屬項目管理 */}
+      {isEditing && (
+        <div style={{ marginTop: '40px' }}>
+          <hr />
+          <CostList contractId={id} />
+          <hr />
+          <PaymentList contractId={id} />
+          <hr />
+          <InvoiceList contractId={id} />
+        </div>
+      )}
     </div>
   );
 };
