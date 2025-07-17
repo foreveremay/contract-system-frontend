@@ -3,13 +3,33 @@ import { getContractItems, createContractItem } from './api';
 
 const InvoiceList = ({ contractId }) => {
   const [invoices, setInvoices] = useState([]);
-  // 這裡可以加入新增發票的表單狀態
+  const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [amount, setAmount] = useState('');
+  const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0]);
 
-  useEffect(() => {
+  const fetchInvoices = () => {
     if (contractId) {
       getContractItems(contractId, 'invoices').then(setInvoices);
     }
+  };
+
+  useEffect(() => {
+    fetchInvoices();
   }, [contractId]);
+
+  const handleAddInvoice = async (e) => {
+    e.preventDefault();
+    const newInvoice = { 
+        contract: contractId, 
+        invoice_number: invoiceNumber,
+        amount, 
+        issue_date: issueDate
+    };
+    await createContractItem(contractId, 'invoices', newInvoice);
+    fetchInvoices();
+    setInvoiceNumber('');
+    setAmount('');
+  };
 
   return (
     <div>
@@ -17,11 +37,35 @@ const InvoiceList = ({ contractId }) => {
       <ul>
         {invoices.map(i => (
           <li key={i.id}>
-            {i.invoice_number}: ${parseFloat(i.amount).toLocaleString()}
+            發票號碼: {i.invoice_number} / 金額: ${parseFloat(i.amount).toLocaleString()}
           </li>
         ))}
       </ul>
-      {/* 未來可以在這裡加入新增發票的表單 */}
+      <form onSubmit={handleAddInvoice} style={{ marginTop: '10px' }}>
+        <input
+          type="date"
+          value={issueDate}
+          onChange={(e) => setIssueDate(e.target.value)}
+          required
+        />
+        <input
+          type="text"
+          value={invoiceNumber}
+          onChange={(e) => setInvoiceNumber(e.target.value)}
+          placeholder="發票號碼"
+          required
+          style={{ marginLeft: '10px' }}
+        />
+        <input
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="發票金額"
+          required
+          style={{ marginLeft: '10px' }}
+        />
+        <button type="submit" style={{ marginLeft: '10px' }}>新增發票</button>
+      </form>
     </div>
   );
 };
