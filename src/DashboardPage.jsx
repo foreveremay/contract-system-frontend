@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { getContracts, getContractAnalysis } from './api';
-// 從 recharts 引入 PieChart, Pie, Cell 等新元件
+// **修正點：不再需要 getContractAnalysis**
+import { getContracts, getSettlementData } from './api';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './DashboardPage.css';
 
-// 為圓餅圖定義不同狀態的顏色
 const COLORS = {
   IN_PROGRESS: '#0088FE',
   COMPLETED: '#00C49F',
@@ -15,7 +14,6 @@ const COLORS = {
 const DashboardPage = () => {
   const [contracts, setContracts] = useState([]);
   const [profitData, setProfitData] = useState([]);
-  // 新增一個 state 來存放進度圖表的資料
   const [progressData, setProgressData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -27,17 +25,28 @@ const DashboardPage = () => {
         const allContracts = await getContracts();
         setContracts(allContracts);
 
-        // --- 計算毛利數據 (維持不變) ---
+        // --- 修正點：毛利數據計算邏輯 ---
         const aContracts = allContracts.filter(c => c.type === 'A');
-        const analysisPromises = aContracts.map(c => getContractAnalysis(c.id));
-        const analysisResults = await Promise.all(analysisPromises);
-        const formattedProfitData = aContracts.map((contract, index) => ({
-          name: contract.name,
-          '專案總毛利': analysisResults[index].overall_profit, 
-        }));
-        setProfitData(formattedProfitData);
+        
+        // **改為呼叫 getSettlementData**
+        const settlementPromises = aContracts.map(c => getSettlementData(c.id));
+        const settlementResults = await Promise.all(settlementPromises);
 
-        // --- 新增：計算進度數據 ---
+        const formattedProfitData = settlementResults.map((data) => {
+          // **在前端計算專案總毛利**
+          const { contract_a, costs_a, costs_b } = data;
+          const total_cost_a = costs_a.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+          const total_cost_b = costs_b.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+          const overall_profit = parseFloat(contract_a.amount) - total_cost_a - total_cost_b;
+          
+          return {
+            name: contract_a.name,
+            '專案總毛利': overall_profit,
+          };
+        });
+        setProfitData(formattedProfitData);
+        
+        // --- 進度數據計算邏輯 (維持不變) ---
         const statusCounts = allContracts.reduce((acc, contract) => {
           const status = contract.status || 'UNKNOWN';
           acc[status] = (acc[status] || 0) + 1;
@@ -68,7 +77,6 @@ const DashboardPage = () => {
     <div>
       <h2>儀表板</h2>
       <div className="dashboard-container">
-        {/* 圖表一：毛利模式 */}
         <div className="dashboard-card">
           <h3>合約毛利總覽 (A合約)</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -82,8 +90,6 @@ const DashboardPage = () => {
             </BarChart>
           </ResponsiveContainer>
         </div>
-
-        {/* --- 新增的圖表二：進度模式 --- */}
         <div className="dashboard-card">
           <h3>合約進度分佈</h3>
           <ResponsiveContainer width="100%" height={300}>
