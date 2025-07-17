@@ -1,4 +1,8 @@
-const API_BASE_URL = 'http://127.0.0.1:8000';
+// 將原本的
+// const API_BASE_URL = 'http://127.0.0.1:8000';
+
+// 修改為讀取環境變數，如果讀不到，則使用本地開發路徑作為備用
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 export const getContracts = async () => {
   try {
