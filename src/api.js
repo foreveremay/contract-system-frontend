@@ -11,6 +11,7 @@ export const getContracts = async () => {
   }
 };
 
+// **此函式已被新的 getSettlementData 取代，但暫時保留以防萬一**
 export const getContractAnalysis = async (contractId) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/contracts/${contractId}/analysis/`);
@@ -85,9 +86,6 @@ export const getCategories = async () => {
   }
 };
 
-// --- 以下是合併了兩個分支的新函式 ---
-
-// from stage-1
 export const getContractItems = async (contractId, itemType) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/contracts/${contractId}/${itemType}/`);
@@ -99,7 +97,6 @@ export const getContractItems = async (contractId, itemType) => {
   }
 };
 
-// from stage-1
 export const createContractItem = async (contractId, itemType, data) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/contracts/${contractId}/${itemType}/`, {
@@ -115,7 +112,6 @@ export const createContractItem = async (contractId, itemType, data) => {
   }
 };
 
-// from stage-1
 export const deleteContractItem = async (itemType, itemId) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/${itemType}/${itemId}/`, {
@@ -130,7 +126,6 @@ export const deleteContractItem = async (itemType, itemId) => {
   }
 };
 
-// from stage-2
 export const getSettlementData = async (contractId) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/contracts/${contractId}/settlement-data/`);
@@ -144,10 +139,16 @@ export const getSettlementData = async (contractId) => {
   }
 };
 
-// from stage-2
+/**
+ * 執行結算，將最終的獎金分配等資料送到後端
+ * @param {string} contractId - 主合約 A 的 ID
+ * @param {object} settlementData - 包含獎金分配資訊的物件
+ * @returns {Promise<object>}
+ */
 export const performSettlement = async (contractId, settlementData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/contracts/${contractId}/settlement/`, {
+    // --- 修正點：將 settlement 改為 settle ---
+    const response = await fetch(`${API_BASE_URL}/api/contracts/${contractId}/settle/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settlementData),
