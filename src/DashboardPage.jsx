@@ -1,11 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { getContracts, getContractAnalysis } from './api';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+// 從 recharts 引入 PieChart, Pie, Cell 等新元件
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './DashboardPage.css';
+
+// 為圓餅圖定義不同狀態的顏色
+const COLORS = {
+  IN_PROGRESS: '#0088FE',
+  COMPLETED: '#00C49F',
+  SETTLED: '#FFBB28',
+  OVERDUE: '#FF8042',
+};
 
 const DashboardPage = () => {
   const [contracts, setContracts] = useState([]);
   const [profitData, setProfitData] = useState([]);
+  // 新增一個 state 來存放進度圖表的資料
+  const [progressData, setProgressData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -16,21 +27,28 @@ const DashboardPage = () => {
         const allContracts = await getContracts();
         setContracts(allContracts);
 
-        // --- 計算毛利數據 ---
-        // 只針對 A 合約計算
+        // --- 計算毛利數據 (維持不變) ---
         const aContracts = allContracts.filter(c => c.type === 'A');
-        
-        // 使用 Promise.all 平行獲取所有 A 合約的分析資料
         const analysisPromises = aContracts.map(c => getContractAnalysis(c.id));
         const analysisResults = await Promise.all(analysisPromises);
-
         const formattedProfitData = aContracts.map((contract, index) => ({
           name: contract.name,
-          // 'overall_profit' 是從後端 analysis API 來的欄位
           '專案總毛利': analysisResults[index].overall_profit, 
         }));
-
         setProfitData(formattedProfitData);
+
+        // --- 新增：計算進度數據 ---
+        const statusCounts = allContracts.reduce((acc, contract) => {
+          const status = contract.status || 'UNKNOWN';
+          acc[status] = (acc[status] || 0) + 1;
+          return acc;
+        }, {});
+
+        const formattedProgressData = Object.keys(statusCounts).map(status => ({
+          name: status,
+          value: statusCounts[status],
+        }));
+        setProgressData(formattedProgressData);
         
       } catch (err) {
         console.error(err);
@@ -54,12 +72,7 @@ const DashboardPage = () => {
         <div className="dashboard-card">
           <h3>合約毛利總覽 (A合約)</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart
-              data={profitData}
-              margin={{
-                top: 5, right: 30, left: 20, bottom: 5,
-              }}
-            >
+            <BarChart data={profitData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
@@ -70,9 +83,30 @@ const DashboardPage = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* 其他圖表卡片可以加在這裡 */}
+        {/* --- 新增的圖表二：進度模式 --- */}
         <div className="dashboard-card">
-          <h3>進度模式 (待開發)</h3>
+          <h3>合約進度分佈</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={progressData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+                nameKey="name"
+                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+              >
+                {progressData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[entry.name] || '#8884d8'} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value, name) => [`${value} 份`, name]} />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>
